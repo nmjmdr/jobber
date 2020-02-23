@@ -49,8 +49,3 @@ Diagram here
 ## How does the Recoverer recovers jobs?
 1. Recoverer regularly scans the `in_process_queue` for jobs that do not have an active lock 
 2. If it finds a job present in the `in_process_queue` but without an active lock, it then pops that job and pushes it back onto the worker queue
-
-
-
-
-
