@@ -3,7 +3,7 @@ package worker
 import (
 	"time"
 
-	"lib/distributedlock"
+	"../dlock"
 
 	"github.com/go-redis/redis"
 )
@@ -23,7 +23,7 @@ type worker struct {
 	handle           Handle
 	postResult       PostResult
 	quitCh           chan bool
-	lock             distributedlock.Lock
+	lock             dlock.Lock
 }
 
 func (w *worker) work() {

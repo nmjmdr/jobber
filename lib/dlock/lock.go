@@ -1,4 +1,4 @@
-package distributedlock
+package dlock
 
 import (
 	"errors"

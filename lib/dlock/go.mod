@@ -1,4 +1,4 @@
-module distributedlock
+module dlock
 
 go 1.13
 
