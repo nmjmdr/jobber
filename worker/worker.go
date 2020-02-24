@@ -3,9 +3,8 @@ package worker
 import (
 	"time"
 
-	"../dlock"
-
 	"github.com/go-redis/redis"
+	"github.com/nmjmdr/jobber/dlock"
 )
 
 type Worker interface {
