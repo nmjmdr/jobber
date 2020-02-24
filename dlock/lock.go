@@ -16,42 +16,42 @@ type Lock interface {
 
 type locker struct {
 	randomValue string
-	client      *redis.Client
+	pipe        redis.Pipeliner
 }
 
-func newLocker(client *redis.Client) Lock {
+func newLocker(pipe redis.Pipeliner) Lock {
 	return &locker{
 		randomValue: uuid.NewV4().String(),
-		client:      client,
+		pipe:        pipe,
 	}
 }
 
 func (l *locker) Lock(id string, expiry time.Duration) (bool, error) {
-	isSet, err := l.client.SetNX(id, l.randomValue, expiry).Result()
+	isSet, err := l.pipe.SetNX(id, l.randomValue, expiry).Result()
 	return isSet, err
 }
 
 func (l *locker) Unlock(id string) error {
-	val, err := l.client.Get(id).Result()
+	val, err := l.pipe.Get(id).Result()
 	if err != nil && err != redis.Nil {
 		return err
 	}
 	// check if it is this instance of LockExp that owns the lock
 	if val == l.randomValue {
-		return l.client.Del(id).Err()
+		return l.pipe.Del(id).Err()
 	} else {
 		return errors.New("Cannot unlock, not the owner of lock")
 	}
 }
 
 func (l *locker) IsLocked(id string) (bool, error) {
-	_, err := l.client.Get(id).Result()
+	_, err := l.pipe.Get(id).Result()
 	if err == redis.Nil {
 		return false, nil
 	}
 	return true, err
 }
 
-func NewLock(client *redis.Client) Lock {
-	return newLocker(client)
+func NewLock(pipe redis.Pipeliner) Lock {
+	return newLocker(pipe)
 }
