@@ -1,8 +1,6 @@
 package worker
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -29,47 +27,64 @@ type worker struct {
 	quitCh           chan bool
 }
 
-func (w *worker) fetch() (*models.Job, error) {
-	// perform this operation in a transaction
-	pipe := w.client.TxPipeline()
+func (w *worker) work() {
+
+	/* The steps we follow are:
+	1. Read the head of the queue
+	2. Try and lock the job
+	3. If you cant, return, go back to waiting
+	4. If locked, then RPOPLPUSH to in_process_queue
+	5. This way we do not have to implement a transaction
+	6. The recoverer will not be able to recover, before the worker can lock the job
+	*/
+
 	// pop from worker queue
 	queue := constants.WorkerQueueName(w.jobType)
-	cmd := pipe.RPopLPush(queue, constants.InProcessQueue)
-	result, err := cmd.Result()
+
+	results, err := w.client.LRange(queue, 0, 0).Result()
 	if err != nil && err != redis.Nil {
 		log.Printf("Error getting jobs from worker queue: %s", err)
-		return nil, err
+		return
 	}
-	// no jobs
-	if err == redis.Nil {
-		return nil, nil
+
+	if err == redis.Nil || len(results) == 0 {
+		return
 	}
 
 	var job *models.Job
-	job, err = models.ToJob(result)
+	job, err = models.ToJob(results[0])
 	if err != nil {
-		log.Print(fmt.Sprintf("Could not serialize job from queue: %s, result is: ", err, result))
-		return nil, err
+		log.Printf("Could not serialize job from queue: %s, result is: %s", err, results[0])
+		return
 	}
 
-	// we have got the job now, we should lock it, so that recoverer knows we are working on it
-	lock := dlock.NewLock(pipe)
+	// no jobs
+	if err == redis.Nil {
+		return
+	}
+
+	// we have got the job now, we should lock it, so that recoverer and other workers we are working on it
+	lock := dlock.NewLock(w.client.Pipeline())
 	locked, err := lock.Lock(job.Id, w.visiblityTimeout)
 	if err != nil {
 		log.Printf("Error encountred while trying to get for job: %s, Error: %s", job.Id, err)
-		return nil, err
+		return
 	}
-
 	if !locked {
-		// this should never happen,
-		return nil, errors.New("Job was popped by worker, but was unable to lock it")
+		// some other worker locked it, return
+		return
 	}
-	return job, nil
 
-}
+	// Pop and push to in_process_queue
+	_, err = w.client.RPopLPush(queue, constants.InProcessQueue).Result()
+	if err != nil && err != redis.Nil {
+		log.Printf("Error getting jobs from worker queue: %s", err)
+		return
+	}
 
-func (w *worker) work() {
-
+	// process job
+	result, err := w.handle(job.Payload)
+	w.postResult(result, err)
 }
 
 func (w *worker) Start() {

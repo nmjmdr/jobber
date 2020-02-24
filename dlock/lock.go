@@ -16,7 +16,8 @@ type Lock interface {
 
 type locker struct {
 	randomValue string
-	pipe        redis.Pipeliner
+	// This is to support executing commands to lock as part of transaction
+	pipe redis.Pipeliner
 }
 
 func newLocker(pipe redis.Pipeliner) Lock {
