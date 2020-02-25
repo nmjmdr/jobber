@@ -1,6 +1,10 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	uuid "github.com/satori/go.uuid"
+)
 
 type Job struct {
 	Id      string `json:"id"`
@@ -15,4 +19,12 @@ func ToJob(jobJs string) (*Job, error) {
 		return nil, err
 	}
 	return job, nil
+}
+
+func NewJob(payload string, jobType string) Job {
+	return Job{
+		Id:      uuid.NewV4().String(),
+		Payload: payload,
+		Type:    jobType,
+	}
 }
