@@ -2,8 +2,8 @@ package dispatcher
 
 import (
 	"github.com/go-redis/redis"
-	"github.com/nmjmdr/jobber/constants"
-	"github.com/nmjmdr/jobber/models"
+	"github.com/nmjmdr/jobber/common/constants"
+	"github.com/nmjmdr/jobber/common/models"
 )
 
 type fifoDispatcher struct {

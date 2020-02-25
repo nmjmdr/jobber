@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/nmjmdr/jobber/constants"
+	"github.com/nmjmdr/jobber/common/constants"
+	"github.com/nmjmdr/jobber/common/models"
 	"github.com/nmjmdr/jobber/dlock"
-	"github.com/nmjmdr/jobber/models"
 )
 
 type Worker interface {
