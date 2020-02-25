@@ -28,3 +28,12 @@ func NewJob(payload string, jobType string) Job {
 		Type:    jobType,
 	}
 }
+
+func ToJson(job Job) (string, error) {
+	serialized, err := json.Marshal(job)
+	if err != nil {
+		return "", err
+	}
+	js := string(serialized[:])
+	return js, nil
+}
