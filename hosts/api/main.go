@@ -40,21 +40,8 @@ func parseBody(r *http.Request) (*RequestBody, error) {
 	return &requestBody, nil
 }
 
-func main() {
-	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", DB: 0})
-	_, err := client.Ping().Result()
-	if err != nil {
-		log.Fatalf("Unable to ping redis error : %s\n", err.Error())
-	} else {
-		log.Println("> connected to redis")
-	}
-	dispatcher := dispatcher.NewFifoDispatcher(client)
-	log.Println("> started FIFO dispatcher")
-
-	port := 3000
-	log.Printf("> starting http server on port %d\n", port)
-	r := chi.NewRouter()
-	r.Post("/jobs", func(w http.ResponseWriter, r *http.Request) {
+func Handler(dispatcher dispatcher.Dispatcher) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		requestBody, err := parseBody(r)
 		if err != nil {
 			http.Error(w, "Request body is not in the right format", http.StatusBadRequest)
@@ -71,8 +58,24 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		w.Write(responseBytes)
+	}
+}
 
-	})
+func main() {
+	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", DB: 0})
+	_, err := client.Ping().Result()
+	if err != nil {
+		log.Fatalf("Unable to ping redis error : %s\n", err.Error())
+	} else {
+		log.Println("> connected to redis")
+	}
+	handler := Handler(dispatcher.NewFifoDispatcher(client))
+	log.Println("> started FIFO dispatcher")
+
+	port := 3000
+	log.Printf("> starting http server on port %d\n", port)
+	r := chi.NewRouter()
+	r.Post("/jobs", handler)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
 		log.Fatalln(err)
