@@ -21,7 +21,7 @@ type RequestBody struct {
 type Response struct {
 	JobId string `json:"jobId"`
 }
-
+// TODO: use HTTP middleware and http request context to do this
 func parseBody(r *http.Request) (*RequestBody, error) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
