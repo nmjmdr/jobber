@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis"
+	"github.com/nmjmdr/jobber/common/rediswrapper"
 	"github.com/nmjmdr/jobber/dispatcher"
 )
 
@@ -21,6 +22,7 @@ type RequestBody struct {
 type Response struct {
 	JobId string `json:"jobId"`
 }
+
 // TODO: use HTTP middleware and http request context to do this
 func parseBody(r *http.Request) (*RequestBody, error) {
 	b, err := ioutil.ReadAll(r.Body)
@@ -69,7 +71,7 @@ func main() {
 	} else {
 		log.Println("> connected to redis")
 	}
-	handler := Handler(dispatcher.NewFifoDispatcher(client))
+	handler := Handler(dispatcher.NewFifoDispatcher(rediswrapper.NewRedisClientWrapper(client)))
 	log.Println("> started FIFO dispatcher")
 
 	port := 3000
