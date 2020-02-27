@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/nmjmdr/jobber/common/constants"
 	"github.com/nmjmdr/jobber/common/models"
+	"github.com/nmjmdr/jobber/common/redisqueue"
 	"github.com/nmjmdr/jobber/dlock"
 	"github.com/pkg/errors"
 )
@@ -20,9 +21,10 @@ type PostResult func(result string, err error)
 type worker struct {
 	jobType          string
 	visiblityTimeout time.Duration
-	client           *redis.Client
+	queue            redisqueue.Queue
 	handle           Handle
 	postResult       PostResult
+	locker           dlock.Lock
 }
 
 func (w *worker) Work() error {
@@ -39,7 +41,7 @@ func (w *worker) Work() error {
 	// pop from worker queue
 	queue := constants.WorkerQueueName(w.jobType)
 
-	results, err := w.client.LRange(queue, 0, 0).Result()
+	results, err := w.queue.Peek(queue)
 	if err != nil && err != redis.Nil {
 		return errors.Wrap(err, "Error getting jobs from worker queue")
 	}
@@ -60,8 +62,7 @@ func (w *worker) Work() error {
 	}
 
 	// we have got the job now, we should lock it, so that recoverer and other workers we are working on it
-	lock := dlock.NewLock(w.client.Pipeline())
-	locked, err := lock.Lock(job.Id, w.visiblityTimeout)
+	locked, err := w.locker.Lock(job.Id, w.visiblityTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "Error encountred while trying to get for job: %s", job.Id)
 	}
@@ -71,7 +72,7 @@ func (w *worker) Work() error {
 	}
 
 	// Pop and push to in_process_queue
-	_, err = w.client.RPopLPush(queue, constants.InProcessQueue).Result()
+	err = w.queue.PopPush(queue, constants.InProcessQueue)
 	if err != nil && err != redis.Nil {
 		return errors.Wrap(err, "Error getting jobs from worker queue")
 	}
@@ -86,13 +87,15 @@ func NewWorker(jobType string,
 	visiblityTimeout time.Duration,
 	handle Handle,
 	postResult PostResult,
-	client *redis.Client,
+	queue redisqueue.Queue,
+	locker dlock.Lock,
 ) Worker {
 	return &worker{
 		jobType:          jobType,
 		visiblityTimeout: visiblityTimeout,
 		handle:           handle,
 		postResult:       postResult,
-		client:           client,
+		queue:            queue,
+		locker:           locker,
 	}
 }
