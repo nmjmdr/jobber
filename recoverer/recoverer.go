@@ -44,6 +44,7 @@ func (r *recoverer) Recover() error {
 
 	// is there a active lock on the job?
 	isLocked, err := r.locker.IsLocked(job.Id)
+
 	if err != nil {
 		return errors.Wrap(err, "Could not check for lock in recover")
 	}

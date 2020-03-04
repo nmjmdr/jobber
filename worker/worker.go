@@ -35,7 +35,7 @@ func (w *worker) Work() error {
 	3. If you cant, return, go back to waiting
 	4. If locked, then RPOPLPUSH to in_process_queue
 	5. This way we do not have to implement a transaction
-	6. The recoverer will not be able to recover, before the worker can lock the job
+	6. The recoverer will not be able to recover, as the worker would haved locked the job
 	*/
 
 	// pop from worker queue
