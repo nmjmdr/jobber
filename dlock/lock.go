@@ -46,11 +46,8 @@ func (l *locker) Unlock(id string) error {
 }
 
 func (l *locker) IsLocked(id string) (bool, error) {
-	_, err := l.pipe.Get(id).Result()
-	if err == redis.Nil {
-		return false, nil
-	}
-	return true, err
+	result, err := l.pipe.Exists(id).Result()
+	return result == 1, err
 }
 
 func NewLock(pipe redis.Pipeliner) Lock {

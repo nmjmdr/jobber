@@ -1,6 +1,8 @@
 package recoverer
 
 import (
+	"log"
+
 	"github.com/go-redis/redis"
 	"github.com/nmjmdr/jobber/common/constants"
 	"github.com/nmjmdr/jobber/common/models"
@@ -64,5 +66,6 @@ func (r *recoverer) Recover() error {
 	if err != nil {
 		return errors.Wrap(err, "Unable to delete job %s from perocessing queue")
 	}
+	log.Printf("Receovered job: %s\n", job.Id)
 	return nil
 }
