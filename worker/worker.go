@@ -37,6 +37,9 @@ func (w *worker) Work() error {
 	4. If locked, then RPOPLPUSH to in_process_queue
 	5. This way we do not have to implement a transaction
 	6. The recoverer will not be able to recover, as the worker would haved locked the job
+	7. Process the job
+	8. Delete from in_process_queue
+	9. Delete the lock
 	*/
 
 	// pop from worker queue
@@ -58,14 +61,11 @@ func (w *worker) Work() error {
 		return errors.Wrap(err, "Could not serialize job from queue")
 	}
 
-	fmt.Println("got job: ", job)
-
 	// we have got the job now, we should lock it, so that recoverer and other workers we are working on it
 	locked, err := w.locker.Lock(job.Id, w.visiblityTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "Error encountred while trying to get for job: %s", job.Id)
 	}
-	fmt.Println("Locked: ", locked)
 	if !locked {
 		// some other worker locked it, return
 		return nil
