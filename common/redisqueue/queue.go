@@ -1,6 +1,10 @@
 package redisqueue
 
-import "github.com/go-redis/redis"
+import (
+	"fmt"
+
+	"github.com/go-redis/redis"
+)
 
 type Queue interface {
 	Push(key string, val string) error
@@ -20,7 +24,10 @@ func NewRedisClientQueue(client *redis.Client) Queue {
 }
 
 func (r *redisClientQueue) Remove(key string, count int64, value interface{}) error {
-	_, err := r.client.LRem(key, count, value).Result()
+	v, err := r.client.LRem(key, count, value).Result()
+	if v != count {
+		return fmt.Errorf("Unable to delete all the keys. Requested delete of %d, but deleted: %d", count, v)
+	}
 	return err
 }
 

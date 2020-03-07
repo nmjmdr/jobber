@@ -81,8 +81,17 @@ func (w *worker) Work() error {
 	result, err := w.handle(job.Payload)
 	w.postResult(result, err)
 
-	// need to delete from processing queue
-	// need to then delete lock
+	jobJs, _ := models.ToJson(*job)
+	err = w.queue.Remove(constants.InProcessQueue, 1, jobJs)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to delete job %s from In Process queue", job.Id)
+	}
+
+	err = w.locker.Unlock(job.Id)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to remove lock for job: %s", job.Id)
+	}
+
 	return nil
 }
 
