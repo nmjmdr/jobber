@@ -17,7 +17,6 @@ import (
 const runEvery = 1 * time.Second
 
 func main() {
-	fmt.Println("Here")
 	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", DB: 0})
 	_, err := client.Ping().Result()
 	if err != nil {
@@ -26,7 +25,7 @@ func main() {
 		log.Println("> connected to redis")
 	}
 
-	r := recoverer.NewRecoverer(redisqueue.NewRedisClientQueue(client), dlock.NewLock(client.Pipeline()))
+	r := recoverer.NewRecoverer(redisqueue.NewRedisClientQueue(client), dlock.NewLock(client))
 
 	ticker := time.NewTicker(runEvery)
 	done := make(chan os.Signal, 1)

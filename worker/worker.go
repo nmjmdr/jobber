@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -40,8 +41,9 @@ func (w *worker) Work() error {
 
 	// pop from worker queue
 	queue := constants.WorkerQueueName(w.jobType)
-
+	fmt.Println("Queue :", queue)
 	results, err := w.queue.Peek(queue)
+
 	if err != nil && err != redis.Nil {
 		return errors.Wrap(err, "Error getting jobs from worker queue")
 	}
@@ -56,16 +58,14 @@ func (w *worker) Work() error {
 		return errors.Wrap(err, "Could not serialize job from queue")
 	}
 
-	// no jobs
-	if err == redis.Nil {
-		return nil
-	}
+	fmt.Println("got job: ", job)
 
 	// we have got the job now, we should lock it, so that recoverer and other workers we are working on it
 	locked, err := w.locker.Lock(job.Id, w.visiblityTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "Error encountred while trying to get for job: %s", job.Id)
 	}
+	fmt.Println("Locked: ", locked)
 	if !locked {
 		// some other worker locked it, return
 		return nil
@@ -80,6 +80,9 @@ func (w *worker) Work() error {
 	// process job
 	result, err := w.handle(job.Payload)
 	w.postResult(result, err)
+
+	// need to delete from processing queue
+	// need to then delete lock
 	return nil
 }
 
