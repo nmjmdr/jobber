@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,8 +17,26 @@ import (
 
 const runEvery = 1 * time.Second
 
+const visibilityTimeout = 15 * time.Second
+
+func parseArgs(args []string) (time.Duration, error) {
+	val, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return time.Millisecond, err
+	}
+	return val * time.Millisecond, nil
+}
+
 func main() {
-	fmt.Println("Here")
+
+	args := os.Args[1:]
+
+	processTime, err := parseArgs(args)
+	if err != nil {
+		fmt.Println("Unable to parse process time args. Usage: `sampleworker 1000` makes the program take 1000 ms to process a job")
+		return
+	}
+
 	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", DB: 0})
 	_, err := client.Ping().Result()
 	if err != nil {
@@ -28,8 +47,9 @@ func main() {
 
 	w := worker.NewWorker(
 		"sample",
-		20*time.Second,
+		visibilityTimeout,
 		func(payload string) (string, error) {
+			time.Sleep(processTime)
 			return payload + " - done", nil
 		},
 		func(result string, err error) {

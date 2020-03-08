@@ -5,6 +5,9 @@
 4. If locked, then RPOPLPUSH to in_process_queue
 5. This way we do not have to implement a transaction
 6. The recoverer will not be able to recover, as the worker would haved locked the job
+7. Process the job
+8. Delete from in_process_queue
+9. Delete the lock
 */
 
 package tests
@@ -56,7 +59,7 @@ func Test_When_A_Job_At_The_Head_Is_Locked_By_Other_Worker_It_Just_Returns(t *te
 	}
 }
 
-func Test_When_A_Job_At_The_Head_Is_Available_It_Locks_The_Job_And_Then_Marks_As_In_Process(t *testing.T) {
+func Test_When_A_Job_At_The_Head_Is_Available_It_Locks_The_Job_And_Then_Follows_The_Neccessary_Steps(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -79,12 +82,20 @@ func Test_When_A_Job_At_The_Head_Is_Available_It_Locks_The_Job_And_Then_Marks_As
 		PopPush(gomock.Eq(constants.WorkerQueueName(jobType)), gomock.Eq(constants.InProcessQueue)).
 		Return(nil)
 
+	queue.EXPECT().
+		Remove(gomock.Eq(constants.InProcessQueue), int64(1), gomock.Eq(jobJs)).
+		Return(nil)
+
 	visiblityTimeout := 1 * time.Second
 
 	lck := mock_dlock.NewMockLock(ctrl)
 	lck.EXPECT().
 		Lock(gomock.Eq(job.Id), gomock.Eq(visiblityTimeout)).
 		Return(true, nil)
+
+	lck.EXPECT().
+		Unlock(gomock.Eq(job.Id)).
+		Return(nil)
 
 	handleCalled := false
 	handle := func(payload string) (string, error) {
