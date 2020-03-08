@@ -49,3 +49,19 @@ Diagram here
 ## How does the Recoverer recovers jobs?
 1. Recoverer regularly scans the `in_process_queue` for jobs that do not have an active lock 
 2. If it finds a job present in the `in_process_queue` but without an active lock, it then pops that job and pushes it back onto the worker queue
+
+## Steps followed by the worker
+The worker follows the below steps:
+	1. Read the head of the queue
+	2. Try and lock the job
+	3. If it cant, return and go back to waiting for the next job
+	4. If the job is locked, then the worker pops the job from the worker queue and pushes it to in_process_queue (It does this using RPOPLPUSH so that the push and pop operations are done in a single step)
+	5. Meanwhile if the recoverer tries to recover a job, it finds that there is an active lock on the job and it returns
+	6. Process the job
+	7. Delete from in_process_queue
+	8. Delete the lock
+
+If the worker fails in processing the job, the job remains in in_process_queue and the locks expires. The recoverer can then recover the job. Currently the recoverer attempts to recover only the job at the head of the queue. It does not look further down the queue. This should not be a problem as along the visibility timeouts are small and it is not highly critical to recover the jobs relatively early. 
+
+## Future enhancements
+1. Making the recovere look through the in_proceses_queue to recover jobs
