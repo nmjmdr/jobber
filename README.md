@@ -3,10 +3,10 @@
 Jobber is a job queue service implemented using GO and Redis. 
 
 ## Version 2.0 of Walrus
-_ Jobber is the version 2 of Walrus project (https://github.com/nmjmdr/walrus) _
+_Jobber is the version 2 of Walrus project (https://github.com/nmjmdr/walrus)_
+
 Jobber simplifies the design and improves the project structure.
-Jobber does not have built in scheduler like Walrus. A scheduler is used to schedule jobs for execution. Jobber implements 
-dispatcher, worker and recoverer.
+It does not have built in scheduler like Walrus (A scheduler is used to schedule jobs for execution - execute job at a point intime).  It implements dispatcher, worker and recoverer.
 
 Jobber can be easily extended to perform the functionality of Walrus by adding the scheduler component to it.
 
