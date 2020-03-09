@@ -2,14 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis"
-	"github.com/nmjmdr/jobber/common/rediswrapper"
+	"github.com/nmjmdr/jobber/common/redisqueue"
 	"github.com/nmjmdr/jobber/dispatcher"
 )
 
@@ -33,6 +35,10 @@ func parseBody(r *http.Request) (*RequestBody, error) {
 	err = json.Unmarshal(b, &requestBody)
 	if err != nil {
 		return nil, err
+	}
+	requestBody.JobType = strings.TrimSpace(requestBody.JobType)
+	if len(requestBody.JobType) == 0 {
+		return nil, errors.New("Unable to parse body, missing jobType")
 	}
 	payloadBytes, err := json.Marshal(requestBody.PayloadMap)
 	if err != nil {
@@ -71,7 +77,7 @@ func main() {
 	} else {
 		log.Println("> connected to redis")
 	}
-	handler := Handler(dispatcher.NewFifoDispatcher(rediswrapper.NewRedisClientWrapper(client)))
+	handler := Handler(dispatcher.NewFifoDispatcher(redisqueue.NewRedisClientQueue(client)))
 	log.Println("> started FIFO dispatcher")
 
 	port := 3000

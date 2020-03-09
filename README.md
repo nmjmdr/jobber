@@ -2,6 +2,15 @@
 
 Jobber is a job queue service implemented using GO and Redis. 
 
+## Version 2.0 of Walrus
+_ Jobber is the version 2 of Walrus project (https://github.com/nmjmdr/walrus) _
+Jobber simplifies the design and improves the project structure.
+Jobber does not have built in scheduler like Walrus. A scheduler is used to schedule jobs for execution. Jobber implements 
+dispatcher, worker and recoverer.
+
+Jobber can be easily extended to perform the functionality of Walrus by adding the scheduler component to it.
+
+
 #### Job Type
 Jobber has the concept of a _Job Type_. Each _job type_ gets its own worker queue. One can have a number of worker instances running to execute job depending upon the load on the worker queue. A future enhancment would be be auto-scale the number of workers depending upon the jobs that are queued in the worker queue.
 
@@ -61,7 +70,13 @@ The worker follows the below steps:
 	7. Delete from in_process_queue
 	8. Delete the lock
 
-If the worker fails in processing the job, the job remains in in_process_queue and the locks expires. The recoverer can then recover the job. Currently the recoverer attempts to recover only the job at the head of the queue. It does not look further down the queue. This should not be a problem as along the visibility timeouts are small and it is not highly critical to recover the jobs relatively early. 
+If the worker fails in processing the job, the job remains in in_process_queue and the locks expires. The recoverer can then recover the job. Currently the recoverer attempts to recover only the job at the head of the queue. It does not look further down the queue. This should not be a problem as along the visibility timeouts are small and it is not highly critical to recover the jobs relatively early.
+
+## Implementation of Visibility timeout
+Visiblity time out is implemented using SETNX with expiry. SETNX sets a key only if it does not exist. Lock attempts to create a new key using SETNX for the given job id. If it can create it then the a lock has successfully placed on the job. The key is set to expire within the `visibility time out` period.
+
+Note that currently I have not used Redlock mechanism `https://redis.io/topics/distlock` and only done a SETNX without a random value. The drawback of this is that in a master slave setup of redis, if the master goes down, then there is a chance that a valid lock could be removed by another process (in our case the recoverer). 
+Currently this is not handled and the lock can be easily enhanced to handle it.
 
 ## Future enhancements
 1. Making the recovere look through the in_proceses_queue to recover jobs
