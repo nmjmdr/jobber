@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -26,6 +27,14 @@ type worker struct {
 	handle           Handle
 	postResult       PostResult
 	locker           dlock.Lock
+}
+
+func crush(errs []error) error {
+	messages := make([]string, len(errs))
+	for i, e := range errs {
+		messages[i] = e.Error()
+	}
+	return errors.New(strings.Join(messages, ", "))
 }
 
 func (w *worker) Work() error {
@@ -74,7 +83,12 @@ func (w *worker) Work() error {
 	// Pop and push to in_process_queue
 	err = w.queue.PopPush(queue, constants.InProcessQueue)
 	if err != nil && err != redis.Nil {
-		return errors.Wrap(err, "Error getting jobs from worker queue")
+		errs := []error{err}
+		unlockErr := w.locker.Unlock(job.Id)
+		if unlockErr != nil {
+			errs = append(errs, unlockErr)
+		}
+		return errors.Wrap(crush(errs), "Error getting jobs from worker queue")
 	}
 
 	// process job
@@ -84,7 +98,12 @@ func (w *worker) Work() error {
 	jobJs, _ := models.ToJson(*job)
 	err = w.queue.Remove(constants.InProcessQueue, 1, jobJs)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to delete job %s from In Process queue", job.Id)
+		errs := []error{err}
+		unlockErr := w.locker.Unlock(job.Id)
+		if unlockErr != nil {
+			errs = append(errs, unlockErr)
+		}
+		return errors.Wrapf(crush(errs), "Unable to delete job %s from In Process queue", job.Id)
 	}
 
 	err = w.locker.Unlock(job.Id)
