@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -20,6 +21,10 @@ const runEvery = 1 * time.Second
 const visibilityTimeout = 15 * time.Second
 
 func parseArgs(args []string) (time.Duration, error) {
+
+	if len(args) != 1 {
+		return time.Millisecond, errors.New("Insufficient parameters")
+	}
 	val, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		return time.Millisecond, err
