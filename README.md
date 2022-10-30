@@ -49,9 +49,8 @@ I have discussed the design details in this 4-part video series
 
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/1w_v3yG68B8/0.jpg)](https://www.youtube.com/watch?v=kOWTX1q8G10&list=PLnc-9WSlJzpdz3ioLSbAm4dHQ5DqdojPS&ab_channel=paperandpen-softwaredesign "Design of faulet tolerant Job queue - Jobber")
 
-```
-
-```
+[Design](https://raw.githubusercontent.com/nmjmdr/jobber/master/Design.png)
+<img src="Design.png" width="1028"/>
 
 ## Sequence
 1. The API accepts a new job and queues it a queue named `job_queue_job-type`. 
