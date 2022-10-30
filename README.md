@@ -45,10 +45,10 @@ _Response_
 
 # Design details
 I have discussed the design details in this 4-part video series
+
+
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/1w_v3yG68B8/0.jpg)](https://www.youtube.com/watch?v=kOWTX1q8G10&list=PLnc-9WSlJzpdz3ioLSbAm4dHQ5DqdojPS&ab_channel=paperandpen-softwaredesign "Design of faulet tolerant Job queue - Jobber")
 
-
-https://www.youtube.com/watch?v=kOWTX1q8G10&list=PLnc-9WSlJzpdz3ioLSbAm4dHQ5DqdojPS&ab_channel=paperandpen-softwaredesign
 ```
 
 ```
