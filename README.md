@@ -44,8 +44,10 @@ _Response_
 ```
 
 # Design details
+I have discussed the design details in this 4-part video series
+https://www.youtube.com/watch?v=kOWTX1q8G10&list=PLnc-9WSlJzpdz3ioLSbAm4dHQ5DqdojPS&ab_channel=paperandpen-softwaredesign
 ```
-Diagram here
+
 ```
 
 ## Sequence
